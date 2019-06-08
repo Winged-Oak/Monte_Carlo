@@ -1,0 +1,41 @@
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+con = 1                                            # ~ k*T
+R = 1000000                                        # 반복 횟수
+L = 1000                                           # 구간 나누기, 속도과 깊은 관련 있음.
+ALPHA = 2                                          # ~이동할 범주
+x = [ALPHA*2*(np.random.random()-0.5)]; E=0;       # 위치, 에너지
+N = [0]; sq = 2                                    # epoch, 에너지 승수
+
+
+ax = [-1.5*ALPHA]; aN = [0]                                            # 분포 기록
+bx = [-1.5*ALPHA]; bE = [np.exp(-pow(bx[0],2)/con)]                    # 볼츠만 에너지분포
+for i in range(1, L):
+    ax.append(-1.5*ALPHA + 1.5*(i+1)*2*ALPHA/L); aN.append(0)
+    bx.append(-1.5*ALPHA + 1.5*(i+1)*2*ALPHA/L); bE.append(np.exp(-pow(bx[i],sq)/con))
+
+
+for i in range(R):                                                     # i : 0 ~ R-1
+    x1 = x[i]; x2 = x[i] +  ALPHA * 2 * (np.random.random()-0.5)       # 1, 2 : 이동 전, 후 위치
+    dE = pow(x2,sq) - pow(x1,sq)                                       # 위치간 에너지차이
+    B = np.exp(-dE/con)                                                # 에너지 차이에 의존한 분포, Boltzmann factor
+    if dE <= 0:                                                        # 이동 후 안정적일 때
+        x.append(x2);
+    elif dE > 0:                                                       # 이동 후 불안정할 때
+        if np.random.random() < (B):                                   # 불안정하지만 Boltzmann factor에 의존해 이동
+            x.append(x2);
+        else:                                                          # 불안정하니까 이동 X
+            x.append(x1);
+    for j in range(L-1):                                               # 위치 기록
+        if x[i+1] < ax[j+1]:
+            if x[i+1] >= ax[j]:
+                aN[j] += 1; break  
+    N.append(i+1);
+    E += pow(x[i], sq)
+
+print(E/R)                                     # 입자가 가졌던 에너지 평균
+plt.plot(ax,aN); plt.show()                    # 구간에 입자가 위치한 횟수 ~ 입자 분포형태
+plt.plot(bx,bE); plt.show()
