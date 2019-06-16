@@ -1,0 +1,135 @@
+# 선언
+
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+Epoch = 9000
+S1D = 256        # Dimension에 따른 스핀 Array의 크기
+S2D = 128
+KT = 1           # 편의상 1
+FJ = +1          # ferromagnetism 편의상 1
+
+# 1-D Ising Model ( Ferromagnet, J > 0 ) 최인접 상호작용
+
+lx = []
+for i in range(S1D):
+    lx.append(i+1)
+lx = np.array(lx)
+fig, axs = plt.subplots(2, 10, figsize=(20, 4))
+
+
+spin1D = np.random.randint(0,2, S1D)*2-1
+for i in range(Epoch+1):
+    for j in range(S1D):
+        # dE calculation : (-1)*H - H = -2H 
+        # H = -J(S*S)이고 강자성체이므로 J>0, Ei = -S*S, Ef = -(-S)*S, dE = 2S*S
+        if j == 0:                                                             # 하한 Index overflow 
+            dE = 2*FJ*spin1D[j]*(spin1D[j+1])                                    
+        elif j == S1D-1:                                                       # 상한 Index overflow 
+            dE = 2*FJ*spin1D[j]*(spin1D[j-1])
+        else:
+            dE = 2*FJ*spin1D[j]*(spin1D[j-1] + spin1D[j+1])
+        
+        # Monte Carlo
+        if dE <= 0:                                              # 뒤집은게 안정하니까 뒤집음
+            spin1D[j] *= -1
+        elif dE > 0:                                             # 뒤집은게 불안정할 때
+            if np.exp(-dE/KT) > np.random.random():              # 불안정하지만 Boltzmann factor에 의존해 뒤집음
+                spin1D[j] *= -1
+
+    # Epoch를 시간으로 균등하게 환산하면
+    if (i % 1000) == 0:
+        axs[0, int(i/1000)].plot(lx, spin1D)
+        axs[0, int(i/1000)].set_title('Time = %dt' % int(i/1000))
+        axs[0, int(i/1000)].set_ylim([-1.3,1.3])
+        
+
+        
+# 1-D Ising Model ( Ferromagnet, J > 0 ) 차인접까지 상호작
+
+spin1D = np.random.randint(0,2, S1D)*2-1
+for i in range(Epoch+1):
+    for j in range(S1D):
+
+        if j == 0:                                                             
+            dE = 2*FJ*spin1D[j]*(spin1D[j+1] + spin1D[j+2])                                    
+        elif j == 1:
+            dE = 2*FJ*spin1D[j]*(spin1D[j-1] + spin1D[j+1] + spin1D[j+2])
+        elif j == S1D-2:
+            dE = 2*FJ*spin1D[j]*(spin1D[j-2] + spin1D[j-1] + spin1D[j+1])
+        elif j == S1D-1:                                                       
+            dE = 2*FJ*spin1D[j]*(spin1D[j-2] + spin1D[j-1])
+        else:
+            dE = 2*FJ*spin1D[j]*(spin1D[j-2] + spin1D[j-1] + spin1D[j+1] + spin1D[j+2])
+        
+        if dE <= 0:                            
+            spin1D[j] *= -1
+        elif dE > 0:                            
+            if np.exp(-dE/KT) > np.random.random():              
+                spin1D[j] *= -1
+        if (i % 1000) == 0:
+            axs[1, int(i/1000)].plot(lx, spin1D)
+            axs[1, int(i/1000)].set_ylim([-1.3,1.3])
+                                          
+axs[0][0].set_ylabel("Nearest Interactioon")
+axs[1][0].set_ylabel("2nd Nearest")
+
+# 2-D Ising Model ( Ferro magnet, J > 0 ) 최인접 상호작용
+
+spin2D = np.random.randint(0,2, (S2D, S2D))*2-1
+for k in range(1001):
+    for i in range(S2D):       # row
+        for j in range(S2D):   # column
+            
+            # dE 계산 
+            if i == 0:
+                if j == 0:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i][j+1] + spin2D[i+1][j])
+                elif j == S2D-1:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i][j-1] + spin2D[i+1][j])
+                else:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i][j-1] + spin2D[i][j+1] + spin2D[i+1][j])
+            elif i == S2D-1:
+                if j == 0:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i][j+1] + spin2D[i-1][j])
+                elif j == S2D-1:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i][j-1] + spin2D[i-1][j])
+                else:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i][j-1] + spin2D[i][j+1] + spin2D[i-1][j])
+            elif j == 0:
+                if i == 0:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i][j+1] + spin2D[i+1][j])
+                elif i == S2D-1:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i][j+1] + spin2D[i-1][j])
+                else:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i-1][j] + spin2D[i+1][j] + spin2D[i][j+1])
+            elif j == S2D-1:
+                if i == 0:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i+1][j] + spin2D[i][j-1])
+                elif i == S2D-1:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i-1][j] + spin2D[i][j-1])
+                else:
+                    dE = 2*FJ*spin2D[i][j]*(spin2D[i-1][j] + spin2D[i+1][j] + spin2D[i][j-1])
+            else:
+                dE = 2*FJ*spin2D[i][j]*(spin2D[i-1][j] + spin2D[i+1][j] + spin2D[i][j-1] + spin2D[i][j+1])
+                
+            # Monte Carlo
+            if dE <= 0:                            
+                spin2D[i][j] *= -1
+            elif dE > 0:                            
+                if np.exp(-dE/KT) > np.random.random():              
+                    spin2D[i][j] *= -1
+    if 1< k < 100:
+        if (k % 10 ) == 0:
+            plt.pcolormesh(spin2D, cmap=plt.cm.gray)
+            plt.title('Time = %dt'% int(k/10))  
+            plt.axis('tight')
+            plt.show()
+    if (k % 100) == 0:
+        plt.pcolormesh(spin2D, cmap=plt.cm.gray)
+        plt.title('Time = %dt'% int(k/10))  
+        plt.axis('tight')
+        plt.show()
+        
+        
